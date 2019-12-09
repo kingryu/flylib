@@ -253,42 +253,94 @@ this.fly = this.fly||{};
     Util.getRandomColor =function (){
         return '#'+('00000'+(Math.random()*0x1000000<<0).toString(16)).slice(-6);
     };
-    //返回给定日期和现在的时间差，时间只能是过去时间
+
+
+    //返回两个给定日期的时间差，时间只能是过去时间
     //返回用来显示发表时间，如3分钟前  2天前等
-    Util.getDateDiff =function(dateTimeStamp){    
-        var minute = 1000 * 60;
+    //支持中英文格式
+    Util.getDateDiff = function(dateTimeStamp,currentTime) {
+        //国际化方案，仅供临时使用，可结合项目国际化使用
+        var en_json = {
+            "monthAgo"              : " month ago",
+            "weekAgo"               : " week ago",
+            "weeksAgo"              : " weeks ago",
+            "dayAgo"                : "yesterday",
+            "daysAgo"               : " days ago",
+            "hourAgo"               : " hr ago",
+            "hoursAgo"              : " hrs ago",
+            "minAgo"                : " min ago",
+            "minsAgo"               : " mins ago"
+        }
+        var cn_json={
+            "monthAgo"              : "个月前",
+            "weekAgo"               : "周前",
+            "weeksAgo"              : "周前",
+            "dayAgo"                : "昨天",
+            "daysAgo"               : "天前",
+            "hourAgo"               : "小时前",
+            "hoursAgo"              : "小时前",
+            "minAgo"                : "分钟前",
+            "minsAgo"               : "分钟前"
+        }
+        function Language(lang){
+            var jsonList = cn_json
+            if(lang.indexOf('en')>-1){ 
+                jsonList =  en_json
+            }
+            return {
+                getLan:function(key){
+                    return jsonList[key]
+                }
+            }
+        }
+        var lang = new Language('zh_CN')
+        var minute = 1000 * 60;      //把分，时，天，周，半个月，一个月用毫秒表示
         var hour = minute * 60;
         var day = hour * 24;
-        var halfamonth = day * 15;
+        var week = day * 7;
         var month = day * 30;
-        var now = new Date().getTime();
-        var diffValue = now - dateTimeStamp;
-        if(diffValue < 0){
-            return ;
+        var diffValue = currentTime - dateTimeStamp;//时间差
+      
+        var minC = Math.floor(diffValue / minute);  //计算时间差的分，时，天，周，月
+        var hourC = Math.floor(diffValue / hour);
+        var dayC = Math.floor(diffValue / day);
+        var weekC = Math.floor(diffValue / week);
+        var monthC = Math.floor(diffValue / month);
+        var result;
+      
+        if (monthC == 1 ) {
+            result = " " + monthC + lang.getLan('monthAgo')
+        } else if (weekC == 1) {
+            result = " " + weekC + lang.getLan('weekAgo')
+        } else if (weekC > 1 && weekC < 5) {
+            result = " " + weekC + lang.getLan('weeksAgo')
+        } else if (dayC == 1 ) {
+            result = " " + lang.getLan('dayAgo')
+        } else if (dayC > 1 && dayC < 7) {
+            result = " " + dayC + lang.getLan('daysAgo')
+        } else if (hourC == 1 ) {
+            result = " " + hourC + lang.getLan('hourAgo')
+        } else if (hourC >1 && hourC < 24) {
+            result = " " + hourC + lang.getLan('hoursAgo')
+        } else if (minC == 1 ) {
+            result = " " + minC + lang.getLan('minAgo')
+        } else if (minC > 1 && minC < 60) {
+            result = " " + minC + lang.getLan('minsAgo')
+        } else if (diffValue >= -6000 && diffValue <= minute) {
+          result = " 1 " + lang.getLan('minAgo')
+        } else {
+            var datetime = new Date();
+            datetime.setTime(dateTimeStamp);
+            var Nyear = datetime.getFullYear();
+            var Nmonth = datetime.getMonth() + 1 < 10 ? "0" + (datetime.getMonth() + 1) : datetime.getMonth() + 1;
+            var Ndate = datetime.getDate() < 10 ? "0" + datetime.getDate() : datetime.getDate();
+            // var Nhour = datetime.getHours() < 10 ? "0" + datetime.getHours() : datetime.getHours();
+            // var Nminute = datetime.getMinutes() < 10 ? "0" + datetime.getMinutes() : datetime.getMinutes();
+            // var Nsecond = datetime.getSeconds() < 10 ? "0" + datetime.getSeconds() : datetime.getSeconds();
+            result = Nyear + "-" + Nmonth + "-" + Ndate
         }
-        var monthC =diffValue/month;
-        var weekC =diffValue/(7*day);
-        var dayC =diffValue/day;
-        var hourC =diffValue/hour;
-        var minC =diffValue/minute;
-        if(monthC>=1){
-            result= parseInt(monthC) + "个月前";
-        }
-        else if(weekC>=1){
-            result= parseInt(weekC) + "周前";
-        }
-        else if(dayC>=1){
-            result= parseInt(dayC) +"天前";
-        }
-        else if(hourC>=1){
-            result= parseInt(hourC) +"个小时前";
-        }
-        else if(minC>=1){
-            result= parseInt(minC) +"分钟前";
-        }else
-            result="刚刚";
         return result;
-    }
+      }
     /**************************************************************
      计算2个日期之间的天数
      @day1 {Date}起始日期
